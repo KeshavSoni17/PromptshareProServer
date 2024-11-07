@@ -36,16 +36,14 @@ async def login_user(email: str, password: str):
 
 @app.get("/getUserByEmail")
 async def get_user_by_email(email: str):
-    print(email)
     user = user_collection.find_one({"userEmail": email})
-    print(user)
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     
     return {
         "userId": str(user["_id"]),
-        "userName": user["username"],
-        "userEmail": user["email"]
+        "userName": user["userName"],
+        "userEmail": user["userEmail"]
     }
 
 
