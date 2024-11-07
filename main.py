@@ -2,103 +2,45 @@ from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
 from bson import ObjectId
 from typing import List, Optional
-
-# MongoDB connection
-client = MongoClient("mongodb://mongo:wPtlHWqUmHUpGKInIannYebRZJzsejaL@junction.proxy.rlwy.net:21099")
-db = client["PromptsharePro"]  # Replace with your database name
-users_collection = db["userDatabase"]  # Collection for users
-posts_collection = db["postDatabase"]  # Collection for posts
+from fastapi import FastAPI, HTTPException
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 app = FastAPI()
 
-@app.post("/register")
-async def register_user(user_name: str, user_email: str, user_password: str):
-    if users_collection.find_one({"user_email": user_email}):
-        raise HTTPException(status_code=400, detail="User with this ID already exists")
-    
-    user_data = {
-        "user_name": user_name,
-        "user_email": user_email,
-        "user_password": user_password
-    }
-    
-    users_collection.insert_one(user_data)
-    return {"message": "User registered successfully"}
+client = MongoClient("mongodb://mongo:wPtlHWqUmHUpGKInIannYebRZJzsejaL@junction.proxy.rlwy.net:21099")
+db = client['main']
+user_collection = db['userDatabase']
 
-@app.post("/login")
+@app.post("/registerUser")
+async def register_user(username: str, email: str, password: str):
+    if user_collection.find_one({"userEmail": email}):
+        raise HTTPException(status_code=400, detail="User with this email already exists.")
+    
+    user_id = user_collection.insert_one({
+        "userName": username,
+        "userEmail": email,
+        "userPassword": password
+    }).inserted_id
+    
+    return {"status": "User registered", "userId": str(user_id)}
+
+@app.post("/loginUser")
 async def login_user(email: str, password: str):
-    user = users_collection.find_one({"user_email": email, "user_password": password})
-    if user:
-        return {"message": "Login successful"}
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+    user = user_collection.find_one({"email": email, "password": password})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
 
-def post_to_dict(post):
-    post["_id"] = str(post["_id"])
-    return post
+    return {"status": "Login successful", "userId": str(user["_id"])}
 
-@app.post("/posts/")
-async def create_post(title: str, author: str, llm: str, notes: str, rating: int):
-    post_data = {
-        "postTitle": title,
-        "postAuthor": author,
-        "postLLM": llm,
-        "postNotes": notes,
-        "postRating": rating,
-        "comments": []
+@app.get("/getUserByEmail")
+async def get_user_by_email(email: str):
+    user = user_collection.find_one({"userEmail": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    return {
+        "userId": str(user["_id"]),
+        "userName": user["username"],
+        "userEmail": user["email"]
     }
-    result = posts_collection.insert_one(post_data)
-    return {"message": "Post created successfully", "post_id": str(result.inserted_id)}
-
-@app.get("/posts/", response_model=List[dict])
-async def get_all_posts(filter: Optional[str] = ""):
-    query = {}
-    if filter:
-        query = {
-            "$or": [
-                {"postTitle": {"$regex": filter, "$options": "i"}},
-                {"postAuthor": {"$regex": filter, "$options": "i"}},
-                {"postLLM": {"$regex": filter, "$options": "i"}},
-                {"postNotes": {"$regex": filter, "$options": "i"}}
-            ]
-        }
-    posts = posts_collection.find(query)
-    return [post_to_dict(post) for post in posts]
-
-@app.get("/posts/{post_id}")
-async def get_post(post_id: str):
-    post = posts_collection.find_one({"_id": ObjectId(post_id)})
-    if post:
-        return post_to_dict(post)
-    raise HTTPException(status_code=404, detail="Post not found")
-
-@app.delete("/posts/{post_id}")
-async def delete_post(post_id: str):
-    result = posts_collection.delete_one({"_id": ObjectId(post_id)})
-    if result.deleted_count:
-        return {"message": "Post deleted successfully"}
-    raise HTTPException(status_code=404, detail="Post not found")
-
-@app.post("/posts/{post_id}/comments/")
-async def create_comment(post_id: str, comment_id: str, comment_notes: str, comment_author: str):
-    comment_data = {
-        "commentId": comment_id,
-        "commentNotes": comment_notes,
-        "commentAuthor": comment_author
-    }
-    result = posts_collection.update_one(
-        {"_id": ObjectId(post_id)},
-        {"$push": {"comments": comment_data}}
-    )
-    if result.matched_count:
-        return {"message": "Comment added successfully"}
-    raise HTTPException(status_code=404, detail="Post not found")
-
-@app.delete("/posts/{post_id}/comments/{comment_id}")
-async def delete_comment(post_id: str, comment_id: str):
-    result = posts_collection.update_one(
-        {"_id": ObjectId(post_id)},
-        {"$pull": {"comments": {"commentId": comment_id}}}
-    )
-    if result.matched_count:
-        return {"message": "Comment deleted successfully"}
-    raise HTTPException(status_code=404, detail="Post or comment not found")
