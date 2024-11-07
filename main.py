@@ -28,7 +28,7 @@ async def register_user(username: str, email: str, password: str):
 
 @app.post("/loginUser")
 async def login_user(email: str, password: str):
-    user = user_collection.find_one({"email": email, "password": password})
+    user = user_collection.find_one({"userEmail": email, "userPassword": password})
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
