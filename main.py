@@ -60,6 +60,26 @@ async def create_post(postTitle: str, postAuthor: str, postLLM: str, postNotes: 
     post_id = post_collection.insert_one(post_data).inserted_id
     return {"status": "Post created", "postId": str(post_id)}
 
+@app.post("/updatePost")
+async def update_post(postId: str, postTitle: str, postAuthor: str, postLLM: str, postNotes: str, postRating: int):
+    update_data = {
+        "postTitle": postTitle,
+        "postAuthor": postAuthor,
+        "postLLM": postLLM,
+        "postNotes": postNotes,
+        "postRating": postRating
+    }
+
+    result = post_collection.update_one(
+        {"_id": ObjectId(postId)},
+        {"$set": update_data}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Post not found.")
+    
+    return {"status": "Post updated", "postId": postId}
+
 @app.post("/createComment")
 async def create_comment(postId: str, commentNotes: str, commentAuthor: str):
     comment_data = {
