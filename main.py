@@ -12,12 +12,11 @@ posts_collection = db["postDatabase"]  # Collection for posts
 app = FastAPI()
 
 @app.post("/register")
-async def register_user(user_id: str, user_name: str, user_email: str, user_password: str):
-    if users_collection.find_one({"user_id": user_id}):
+async def register_user(user_name: str, user_email: str, user_password: str):
+    if users_collection.find_one({"user_email": user_email}):
         raise HTTPException(status_code=400, detail="User with this ID already exists")
     
     user_data = {
-        "user_id": user_id,
         "user_name": user_name,
         "user_email": user_email,
         "user_password": user_password
@@ -32,22 +31,6 @@ async def login_user(email: str, password: str):
     if user:
         return {"message": "Login successful"}
     raise HTTPException(status_code=401, detail="Invalid credentials")
-
-@app.get("/user/{user_id}")
-async def get_user(user_id: str):
-    user = users_collection.find_one({"user_id": user_id})
-    if user:
-        # Convert the MongoDB document to a dictionary and remove ObjectId
-        user["_id"] = str(user["_id"])  # Convert ObjectId to string if needed
-        return {"user": user}
-    raise HTTPException(status_code=404, detail="User not found")
-
-@app.delete("/user/{user_id}")
-async def delete_user(user_id: str):
-    result = users_collection.delete_one({"user_id": user_id})
-    if result.deleted_count:
-        return {"message": "User deleted successfully"}
-    raise HTTPException(status_code=404, detail="User not found")
 
 def post_to_dict(post):
     post["_id"] = str(post["_id"])
