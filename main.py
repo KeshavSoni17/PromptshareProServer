@@ -48,7 +48,7 @@ async def get_user_by_email(email: str):
 
 
 @app.post("/createPost")
-async def create_post(postTitle: str, postAuthor: str, postLLM: str, postNotes: str, postRating: int):
+async def create_post(postTitle: str, postAuthor: str, postLLM: str, postNotes: str, postRating: str):
     post_data = {
         "postTitle": postTitle,
         "postAuthor": postAuthor,
@@ -61,7 +61,7 @@ async def create_post(postTitle: str, postAuthor: str, postLLM: str, postNotes: 
     return {"status": "Post created", "postId": str(post_id)}
 
 @app.post("/updatePost")
-async def update_post(postId: str, postTitle: str, postAuthor: str, postLLM: str, postNotes: str, postRating: int):
+async def update_post(postId: str, postTitle: str, postAuthor: str, postLLM: str, postNotes: str, postRating: str):
     update_data = {
         "postTitle": postTitle,
         "postAuthor": postAuthor,
