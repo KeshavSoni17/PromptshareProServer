@@ -154,3 +154,37 @@ async def delete_comment(postId: str, commentId: str):
         raise HTTPException(status_code=404, detail="Comment not found.")
 
     return {"status": "Comment deleted", "postId": postId, "commentId": commentId}
+
+@app.delete("/deleteAllPosts")
+async def delete_all_posts():
+    result = post_collection.delete_many({})  # Deletes all documents in the collection
+
+    if result.deleted_count == 0:
+        return {"status": "No posts to delete."}
+    
+    return {"status": "All posts deleted", "deletedCount": result.deleted_count}
+
+@app.post("/updateUser")
+async def update_user(email: str, username: Optional[str] = None, password: Optional[str] = None):
+    # Find the user by email
+    user = user_collection.find_one({"userEmail": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    # Build the update dictionary based on provided fields
+    update_data = {}
+    if username:
+        update_data["userName"] = username
+    if password:
+        update_data["userPassword"] = password
+
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update fields provided.")
+
+    # Perform the update
+    result = user_collection.update_one(
+        {"userEmail": email},
+        {"$set": update_data}
+    )
+
+    return {"status": "User updated", "userEmail": email, "updatedFields": list(update_data.keys())}
