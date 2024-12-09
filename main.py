@@ -82,8 +82,9 @@ async def update_post(postId: str, postTitle: str, postAuthor: str, postLLM: str
 
 @app.post("/createComment")
 async def create_comment(postId: str, commentNotes: str, commentAuthor: str):
+    comment_id = str(ObjectId())  # Generate a unique comment ID
     comment_data = {
-        "commentId": str(ObjectId()), 
+        "commentId": comment_id,
         "commentNotes": commentNotes,
         "commentAuthor": commentAuthor
     }
@@ -94,7 +95,8 @@ async def create_comment(postId: str, commentNotes: str, commentAuthor: str):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Post not found.")
     
-    return {"status": "Comment added", "postId": postId}
+    return {"status": "Comment added", "postId": postId, "commentId": comment_id}
+
 
 @app.get("/getAllPosts")
 async def get_all_posts(filter: Optional[str] = ""):
