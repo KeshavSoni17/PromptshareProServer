@@ -128,3 +128,27 @@ async def get_post(postId: str):
         comment["commentId"] = str(comment["commentId"])
     
     return {"post": post}
+
+@app.delete("/deletePost")
+async def delete_post(postId: str):
+    result = post_collection.delete_one({"_id": ObjectId(postId)})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Post not found.")
+
+    return {"status": "Post deleted", "postId": postId}
+
+@app.delete("/deleteComment")
+async def delete_comment(postId: str, commentId: str):
+    result = post_collection.update_one(
+        {"_id": ObjectId(postId)},
+        {"$pull": {"comments": {"commentId": commentId}}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Post not found.")
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+
+    return {"status": "Comment deleted", "postId": postId, "commentId": commentId}
